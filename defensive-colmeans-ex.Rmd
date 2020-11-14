@@ -9,10 +9,40 @@ funktionieren oder zumindest hilfreiche Fehlermeldungen erzeugen. Benutzen Sie k
 ```{r, col_means_exdef, eval=FALSE}
 # compute means of all numeric columns in df
 # output: a data.frame
-col_means <- function(df) {
+col_means <- function(df, na.rm = FALSE) {
+  checkmate::assert(
+    checkmate::check_data_frame(df),
+    checkmate::check_matrix(df),
+    checkmate::check_vector(df),
+    checkmate::check_list(df)
+  )
+  # converts lists, vectors and matrices to data frame
+  if(is.numeric(df) | is.list(df)){
+    df <- data.frame(df)
+  }
+  # return warning and empty data frame for empty data input
+  if(any(dim(df) == 0)){
+    warning("data input is empty. Returns empty data frame")
+    return(data.frame())
+  }
+  #detect numeric columns
   numeric <- vapply(df, is.numeric, logical(1))
-  numeric_cols <- df[, numeric]
-
-  data.frame(lapply(numeric_cols, mean))
+  # return warning and empty data frame for non numeric columns
+  if(all(!numeric)){
+    warning("data input is not numeric. Returns empty data frame")
+    return(data.frame())
+  }
+  # extract numeric columns
+  numeric_cols <- data.frame(df[, numeric])
+  colnames(numeric_cols) <- colnames(df)[numeric]
+  # handle vectors
+  if(dim(numeric_cols)[2] == 1){
+    mean <- mean(numeric_cols[,1], na.rm = TRUE)
+    mean_df <- data.frame(mean)
+    colnames(mean_df) <- colnames(numeric_cols)
+    return(mean_df)
+  }
+  
+  data.frame(lapply(numeric_cols, mean, na.rm = na.rm))
 }
 ```
